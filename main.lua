@@ -11,28 +11,22 @@ local currentText = ""
 local fullTextLength = 0
 local typingDone = false
 
--- Jump effect variables
-local jumpTimers = {}        -- jumpTimers[i] = time since letter i appeared
-local jumpDuration = 0.4     -- seconds
-local jumpHeight = 10        -- pixels
+local utf8 = require("utf8")
 
 local function loadNode(nodeId)
     local node = dialogueData.nodes[nodeId]
     currentNodeId = nodeId
     currentText = node.text
-    fullTextLength = #currentText
+    fullTextLength = utf8.len(currentText)
     displayedText = ""
     typingTimer = 0
     typingDone = false
-    jumpTimers = {}
 end
 
 function love.load()
-    --love.graphics.setFont(love.graphics.newFont(20))
+    love.graphics.setFont(love.graphics.newFont(15))
     loadNode("start")
 end
-
-local utf8 = require("utf8")
 
 function love.update(dt)
     if not typingDone then
@@ -53,50 +47,15 @@ function love.update(dt)
                 break
             end
         end
-
-        -- Reset jump timers for new letters
-        for i = 1, charsToShow do
-            if not jumpTimers[i] then
-                jumpTimers[i] = 0
-            end
-        end
-    end
-
-    -- Update jump timers for visible letters
-    for i, t in pairs(jumpTimers) do
-        if t < jumpDuration then
-            jumpTimers[i] = t + dt
-        end
     end
 end
-
 
 function love.draw()
     if inDialogue then
         local node = dialogueData.nodes[currentNodeId]
 
-        local speakerText = node.speaker .. ": "
-        love.graphics.printf(speakerText, 50, 50, 700)
-
-        local x = 50 + love.graphics.getFont():getWidth(speakerText)
-        local y = 50
-
-        local i = 0  -- character count
-
-        for p, c in utf8.codes(displayedText) do
-            i = i + 1
-            local char = utf8.char(c)
-            local offsetY = 0
-            local t = jumpTimers[i]
-
-            if t and t < jumpDuration then
-                local progress = t / jumpDuration
-                offsetY = -4 * jumpHeight * progress * (1 - progress)
-            end
-
-            love.graphics.print(char, x, y + offsetY)
-            x = x + love.graphics.getFont():getWidth(char)
-        end
+        -- Draw speaker name normally (no jumping)
+        love.graphics.printf(node.speaker .. ": " .. displayedText, 50, 50, 700)
 
         if typingDone then
             if node.choices then
